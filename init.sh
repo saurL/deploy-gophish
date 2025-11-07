@@ -86,11 +86,37 @@ fi
 
 # Run certbot (standalone)
 echo "Requesting Let's Encrypt certificates for: $ADMIN_NEW, $WWW_NEW, $DOMAIN_NEW"
-sudo certbot certonly --standalone \
+if ! sudo certbot certonly --standalone \
   -d "$ADMIN_NEW" -d "$WWW_NEW" -d "$DOMAIN_NEW" \
   --preferred-challenges http \
   --agree-tos --non-interactive -m "$EMAIL"
+then
+  echo "Error: certbot failed. Aborting. Fix the issue and re-run the script."
+  exit 6
+fi
+
+echo "Certificates successfully obtained."
+
+# Decide which docker-compose command to use
+DOCKER_CMD=""
+if command -v "docker" >/dev/null 2>&1 && docker help compose >/dev/null 2>&1; then
+  DOCKER_CMD="docker compose"
+elif command -v docker-compose >/dev/null 2>&1; then
+  DOCKER_CMD="docker-compose"
+else
+  echo "Error: neither 'docker compose' nor 'docker-compose' found. Start containers manually."
+  exit 7
+fi
+
+# Start containers (detached)
+echo "Starting containers with: $DOCKER_CMD up -d"
+$DOCKER_CMD up -d
 
 echo
 echo "=== Done ==="
-echo "You can start the containers with the command: docker compose up"
+echo "Containers started. You can check the status with:"
+echo "  $DOCKER_CMD ps"
+echo "Check certificates at: /etc/letsencrypt/live/$DOMAIN_NEW/"
+echo "Access your services:"
+echo " - Admin UI: https://$ADMIN_NEW"
+echo " - Landing pages: https://$DOMAIN_NEW or https://$WWW_NEW"
