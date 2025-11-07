@@ -1,0 +1,14 @@
+{
+  "admin_server": {
+    "listen_url": ":3333",
+    "use_tls": false,
+    "trusted_origins": ["admin.smort-rh.com"]
+  },
+  "phish_server": {
+    "listen_url": ":8080",
+    "use_tls": false
+  },
+  "db_path": "gophish.db",
+  "db_name": "sqlite3",
+  "migrations_prefix": "db/db_"
+}

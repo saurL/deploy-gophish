@@ -1,0 +1,35 @@
+services:
+  gophish:
+    image: gophish/gophish:latest
+    container_name: gophish
+    restart: unless-stopped
+    volumes:
+     - ./gophish/config.json:/opt/gophish/config.json 
+    expose:
+      - "3333"   # admin
+      - "8080"   # phishing landing pages
+    networks:
+      - webnet
+
+  nginx:
+    image: nginx:stable-alpine
+    container_name: gophish-nginx
+    restart: unless-stopped
+
+    ports:
+      - "80:80"
+      - "443:443" 
+    volumes: 
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro 
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - ./nginx/static:/usr/share/nginx/html/static:ro
+      - /etc/letsencrypt/archive:/etc/nginx/certs 
+    depends_on: 
+      - gophish 
+    networks: 
+      - webnet 
+ 
+networks:
+  webnet:
+    driver: bridge
+
