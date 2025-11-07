@@ -2,7 +2,7 @@
   "admin_server": {
     "listen_url": ":3333",
     "use_tls": false,
-    "trusted_origins": ["admin.smort-rh.com"]
+    "trusted_origins": ["ADMIN_DOMAIN"]
   },
   "phish_server": {
     "listen_url": ":8080",

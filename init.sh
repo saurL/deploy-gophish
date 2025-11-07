@@ -1,125 +1,115 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Usage: ./setup-domain.sh example.com admin@example.com
-# Argument 1 : DOMAIN (ex: smort-rh.com)
-# Argument 2 : EMAIL pour certbot (obligatoire pour Let's Encrypt)
-# Le script crée des .bak des fichiers modifiés.
+# Usage: ./setup-domain.sh NEW_DOMAIN EMAIL
+# Exemple: ./setup-domain.sh smort-rh.com admin@example.com
+# Remplace ADMIN_DOMAIN, WWW_DOMAIN, ROOT_DOMAIN dans les fichiers listés.
+# Ne crée pas de .bak. Vérifie avec git avant exécution si tu veux revert facilement.
 
 if [ "$#" -ne 2 ]; then
-  echo "Usage: $0 DOMAIN EMAIL"
-  echo "Ex: $0 smort-rh.com admin@exemple.com"
+  echo "Usage: $0 NEW_DOMAIN EMAIL"
   exit 2
 fi
 
-DOMAIN="$1"
+DOMAIN_NEW="$1"
 EMAIL="$2"
-ADMIN="admin.${DOMAIN}"
-WWW="www.${DOMAIN}"
+ADMIN_NEW="admin.${DOMAIN_NEW}"
+WWW_NEW="www.${DOMAIN_NEW}"
 
-# Fichiers attendus (adapter si nécessaire)
+# fichiers à modifier (adapte si besoin)
 GOPHISH_CONF="./gophish/config.json"
-NGINX_CONF_DIR="./nginx/conf.d"
-NGINX_CONF="${NGINX_CONF_DIR}/gophish.conf"
-NGINX_STATIC="./nginx/static"
-DOCKER_COMPOSE="./docker-compose.yml"
+NGINX_CONF="./nginx/conf.d/gophish.conf"
+GOPHISH_DIR="./gophish"
+NGINX_DIR="./nginx"
 
-echo "Domain   : $DOMAIN"
-echo "Admin    : $ADMIN"
-echo "WWW      : $WWW"
-echo "Email    : $EMAIL"
+echo "Nouveau domaine : $DOMAIN_NEW"
+echo "Admin           : $ADMIN_NEW"
+echo "WWW             : $WWW_NEW"
+echo "Email certbot   : $EMAIL"
 echo
 
-# 0) Vérifications de base
-if [ ! -f "$GOPHISH_CONF" ]; then
-  echo "Erreur: fichier $GOPHISH_CONF introuvable. Vérifie le chemin."
-  exit 3
-fi
-if [ ! -d "$NGINX_CONF_DIR" ]; then
-  echo "Erreur: dossier $NGINX_CONF_DIR introuvable."
-  exit 3
-fi
-if [ ! -f "$NGINX_CONF" ]; then
-  echo "Erreur: fichier $NGINX_CONF introuvable."
-  exit 3
-fi
-if [ ! -d "$NGINX_STATIC" ]; then
-  echo "Info: $NGINX_STATIC introuvable. Le dossier sera créé."
-  mkdir -p "$NGINX_STATIC"
-fi
 
-# Fonction utilitaire : sed in-place portable (mac/linux)
-sed_i() {
-  local expr="$1"; shift
-  local file="$1"; shift
-  if sed --version >/dev/null 2>&1; then
-    sed -i.bak -E "$expr" "$file"
+
+# Fonction : remplacer placeholders dans un fichier en utilisant awk + fichier temporaire
+# Remplace littéralement ADMIN_DOMAIN, WWW_DOMAIN, ROOT_DOMAIN
+replace_placeholders_with_awk() {
+  local file="$1"
+  echo "Traitement : $file"
+  # créer un tmp file de manière sécurisée
+  tmp=$(mktemp "${TMPDIR:-/tmp}/replace.XXXXXX") || { echo "Impossible de créer un tmp"; exit 4; }
+  awk -v admin="$ADMIN_NEW" -v www="$WWW_NEW" -v root="$DOMAIN_NEW" \
+    '{ gsub(/ADMIN_DOMAIN/, admin); gsub(/WWW_DOMAIN/, www); gsub(/ROOT_DOMAIN/, root); print }' "$file" > "$tmp"
+  # mv atomique
+  mv "$tmp" "$file"
+}
+
+# Détecter si au moins un des placeholders est présent (simple check)
+check_placeholders_present() {
+  local file="$1"
+  if grep -q 'ADMIN_DOMAIN\|WWW_DOMAIN\|ROOT_DOMAIN' "$file"; then
+    return 0
   else
-    # macOS BSD sed
-    sed -i '' -E "$expr" "$file"
-    # create a .bak because mac sed -i'' doesn't create one; we create manually
-    cp "$file" "$file.bak"
+    return 1
   fi
 }
 
-# 2) Remplacement des domaines (ordre important: admin, www, root)
-echo "Sauvegarde des fichiers originaux (*.bak créé automatiquement)."
-# backup copies already created by sed_i (or will exist as .bak)
-
-# Replace admin.* occurrences
-echo "Remplacement de l'ancien admin.* par $ADMIN"
-sed_i "s/(admin\\.[a-z0-9.-]+)/$ADMIN/gI" "$NGINX_CONF" || true
-sed_i "s/admin\\.[a-z0-9.-]+/$ADMIN/gI" "$GOPHISH_CONF" || true
 
 
-# Replace www.* occurrences
-echo "Remplacement de l'ancien www.* par $WWW"
-sed_i "s/(www\\.[a-z0-9.-]+)/$WWW/gI" "$NGINX_CONF" || true
-sed_i "s/www\\.[a-z0-9.-]+/$WWW/gI" "$GOPHISH_CONF" || true
+read -r -p "Confirmer le remplacement des placeholders par les valeurs ci‑dessous ? [y/N]
+  ADMIN_DOMAIN -> $ADMIN_NEW
+  WWW_DOMAIN   -> $WWW_NEW
+  ROOT_DOMAIN  -> $DOMAIN_NEW
+> " confirm
+case "$confirm" in
+  [Yy]|[Yy][Ee][Ss]) ;;
+  *) echo "Abandon."; exit 0 ;;
+esac
+
+# Appliquer remplacements (sans .bak)
+replace_placeholders_with_awk "$GOPHISH_CONF"
+replace_placeholders_with_awk "$NGINX_CONF"
+
+read -r -p "Continuer et démarrer gophish + obtenir certificats ? [y/N] " cont
+case "$cont" in
+  [Yy]|[Yy][Ee][Ss]) ;;
+  *) echo "Terminé (opérations arrêtées)."; exit 0 ;;
+esac
 
 
-
-
-
-# NOTE: les sed ci-dessus essayent d'être permissifs. Vérifie toujours les fichiers après exécution.
-echo "Remplacements effectués. Copies .bak créées."
-
-# 3) Afficher un rappel pour vérifier manuellement (sécurité)
-echo
-echo ">>> IMPORTANT : ouvre et vérifie rapidement :"
-echo "    - $GOPHISH_CONF"
-echo "    - $NGINX_CONF"
-echo "Assure-toi que les remplacements correspondent à ce que tu veux."
-echo
-
-# 5) Obtenir les certificats avec certbot (standalone)
-echo
-echo "Obtention des certificats Let's Encrypt pour : $ADMIN, $WWW, $DOMAIN"
-echo "Vérification que port 80 est libre..."
-if ss -ltn | grep -q ':80'; then
-  echo "Attention : le port 80 semble occupé sur l'hôte. Arrête nginx s'il tourne ou libère le port 80."
-  echo "Processus écoutant sur :"
-  ss -ltnp | grep ':80' || true
-  echo "Sortie."
-  exit 5
+# Vérifier port 80 libre
+echo "Vérification du port 80..."
+if command -v ss >/dev/null 2>&1; then
+  if ss -ltn | awk '$4 ~ /:80$/ {exit 1}'; then
+    echo "Port 80 libre."
+  else
+    echo "Erreur : le port 80 est occupé. Libère-le avant d'exécuter certbot."
+    ss -ltnp | grep ':80' || true
+    exit 5
+  fi
+elif command -v netstat >/dev/null 2>&1; then
+  if netstat -ltn | awk '$4 ~ /:80$/ {exit 1}'; then
+    echo "Port 80 libre."
+  else
+    echo "Erreur : le port 80 est occupé. Libère-le avant d'exécuter certbot."
+    netstat -ltnp | grep ':80' || true
+    exit 5
+  fi
+else
+  echo "Impossible de vérifier automatiquement le port 80 (ss/netstat non trouvés). Assure-toi qu'il soit libre."
 fi
 
-# lancer certbot (standalone) - requires sudo
-echo "Lancement de certbot (standalone). Tu peux être invité à entrer sudo..."
+# Lancer certbot (standalone)
+echo "Obtention des certificats Let's Encrypt pour : $ADMIN_NEW, $WWW_NEW, $DOMAIN_NEW"
 sudo certbot certonly --standalone \
-  -d "$ADMIN" -d "$WWW" -d "$DOMAIN" \
+  -d "$ADMIN_NEW" -d "$WWW_NEW" -d "$DOMAIN_NEW" \
   --preferred-challenges http \
   --agree-tos --non-interactive -m "$EMAIL"
 
-echo "Certificats obtenus (si aucune erreur)."
 
 
 echo
 echo "=== Terminé ==="
 echo "Vérifie :"
 echo " - docker-compose ps"
-echo " - /etc/letsencrypt/live/$DOMAIN/ (doit contenir les certificats)"
-echo " - l'accès web : https://$DOMAIN , https://$WWW , https://$ADMIN"
-echo
-echo "Si nginx ne démarre pas : regarde les logs : docker-compose -f $DOCKER_COMPOSE logs nginx"
-echo "Si certbot échoue, vérifie que les DNS pointent vers ce serveur et que le port 80 est libre."
+echo " - /etc/letsencrypt/live/$DOMAIN_NEW/"
+echo " - accès web : https://$DOMAIN_NEW , https://$WWW_NEW , https://$ADMIN_NEW"
