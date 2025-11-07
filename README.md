@@ -66,7 +66,11 @@ Run the initialization script:
 ./init.sh yourdomain.com admin@your-email.com
 ```
 
+If you don't wan't to be asked for validation:
 
+```
+./init.sh yourdomain.com admin@your-email.com -y
+```
 This will:
 
 - Replace placeholders in config.json and nginx.conf.
