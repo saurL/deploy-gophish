@@ -22,7 +22,7 @@ Repository Structure
 │  ├─ conf.d/
 │  │  └─ gophish.conf          # Nginx configuration
 │  └─ static/
-│     └─ sensibilisation.html  # Example static landing page (can redirect users)
+│     └─ sensibilisation.html  # Example static landing page
 ├─ docker-compose.yml          # Docker Compose file for GoPhish + Nginx
 ├─ init.sh                     # Initialization script (replaces placeholders, obtains certificates)
 └─ README.md
