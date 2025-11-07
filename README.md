@@ -30,25 +30,25 @@ Repository Structure
 
 ## How It Works
 
-GoPhish runs in a Docker container and exposes:
+- GoPhish runs in a Docker container and exposes:
 
-the Admin UI (default port 3333)
+  - the Admin UI (default port 3333)
 
-the phishing landing pages (default port 8080)
+  - the phishing landing pages (default port 8080)
 
-Nginx runs in a separate container and acts as a reverse proxy with HTTPS:
+- Nginx runs in a separate container and acts as a reverse proxy with HTTPS:
 
-routes admin.DOMAIN → proxies to gophish:3333
+  - routes admin.DOMAIN → proxies to gophish:3333
 
-routes www.DOMAIN and DOMAIN → proxies to gophish:8080
+  - routes www.DOMAIN and DOMAIN → proxies to gophish:8080
 
-The init.sh script:
+- The init.sh script:
 
-Replaces placeholders (ADMIN_DOMAIN, WWW_DOMAIN, ROOT_DOMAIN) in configuration files.
+  - Replaces placeholders (ADMIN_DOMAIN, WWW_DOMAIN, ROOT_DOMAIN) in configuration files.
 
-Automatically requests HTTPS certificates from Let's Encrypt via certbot --standalone.
+  - Automatically requests HTTPS certificates from Let's Encrypt via certbot --standalone.
 
-Starts the GoPhish and Nginx containers via Docker Compose.
+  - Starts the GoPhish and Nginx containers via Docker Compose.
 
 Any static files placed in nginx/static/ can be used as landing pages or redirect destinations after users submit credentials (useful for testing or educational simulations).
 
@@ -80,12 +80,6 @@ This will:
 Admin UI: https://admin.yourdomain.com
 
 Phishing landing pages: https://yourdomain.com or https://www.yourdomain.com
-
-Customizing Landing Pages
-
-Add any HTML files to nginx/static/
-
-Update your phishing campaign in GoPhish to redirect users to these static pages after interaction.
 
 ## Disclaimer
 
