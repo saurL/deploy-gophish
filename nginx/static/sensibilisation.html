@@ -24,6 +24,33 @@
             padding: 60px 20px;
         }
         
+        .confidential-notice {
+            background: linear-gradient(135deg, rgba(255, 193, 7, 0.15) 0%, rgba(255, 152, 0, 0.15) 100%);
+            border: 2px solid rgba(255, 193, 7, 0.4);
+            border-radius: 12px;
+            padding: 20px 30px;
+            margin-bottom: 40px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { border-color: rgba(255, 193, 7, 0.4); }
+            50% { border-color: rgba(255, 193, 7, 0.6); }
+        }
+        
+        .confidential-notice strong {
+            color: #ffc107;
+            display: block;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+        
+        .confidential-notice p {
+            color: #e0e0e0;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+        
         .header {
             text-align: center;
             margin-bottom: 60px;
@@ -232,6 +259,11 @@
 </head>
 <body>
     <div class="container">
+        <div class="confidential-notice">
+            <strong>🤫 Gardez cette information pour vous</strong>
+            <p>Vous avez été victime d'un exercice de phishing. Merci de ne pas alerter vos collègues afin que cet exercice reste pertinent pour tous. Votre discrétion est essentielle pour la réussite de cette campagne de sensibilisation.</p>
+        </div>
+        
         <div class="header">
             <span class="icon">🎣</span>
             <h1>Vous avez été victime d'un phishing</h1>
@@ -282,6 +314,12 @@
                 </div>
                 
                 <div class="tip-card">
+                    <span class="icon-emoji">📥</span>
+                    <strong>Attention aux téléchargements</strong>
+                    <p>Ne téléchargez jamais de fichiers depuis des liens WeTransfer, Google Drive ou autres services d'envoi provenant d'expéditeurs inconnus. Vérifiez toujours l'authenticité avant de télécharger.</p>
+                </div>
+                
+                <div class="tip-card">
                     <span class="icon-emoji">📞</span>
                     <strong>Contactez directement</strong>
                     <p>En cas de doute, contactez l'entreprise directement par un canal officiel plutôt que de répondre à l'email.</p>
@@ -304,7 +342,7 @@
         <div class="footer">
             <strong>Restons vigilants ensemble</strong>
             <p>Les cybercriminels utilisent constamment de nouvelles techniques. La sensibilisation et la vigilance sont nos meilleures défenses. Ensemble, protégeons Germen.</p>
-            <p class="contact">Pour toute question, contactez votre service IT</p>
+            <p class="contact">Pour toute question contactez Lucas Sauron</p>
         </div>
     </div>
 </body>
