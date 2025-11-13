@@ -95,9 +95,17 @@ if [ "$DO_CERTBOT" = true ]; then
   fi
 
   echo "Requesting Let's Encrypt certificates for: $ADMIN_NEW, $WWW_NEW, $DOMAIN_NEW"
-  if ! sudo certbot certonly --standalone -d "$ADMIN_NEW" -d "$WWW_NEW" -d "$DOMAIN_NEW" --preferred-challenges http --agree-tos --non-interactive -m "$EMAIL"; then
+  if ! sudo certbot certonly --standalone -d "$ADMIN_NEW" --preferred-challenges http --agree-tos --non-interactive -m "$EMAIL"; then
     echo "Certbot failed. Aborting."
     exit 6
+    fi
+  if ! sudo certbot certonly --standalone -d "$WWW_NEW"  --preferred-challenges http --agree-tos --non-interactive -m "$EMAIL"; then
+  echo "Certbot failed. Aborting."
+  exit 6
+  fi
+  if ! sudo certbot certonly --standalone  -d "$DOMAIN_NEW" --preferred-challenges http --agree-tos --non-interactive -m "$EMAIL"; then
+  echo "Certbot failed. Aborting."
+  exit 6
   fi
   echo "Certificates obtained."
 fi
